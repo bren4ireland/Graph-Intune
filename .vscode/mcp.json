@@ -1,0 +1,20 @@
+{
+  "inputs": [
+    { "id": "tenantId", "type": "promptString", "description": "Entra tenant ID" },
+    { "id": "clientId", "type": "promptString", "description": "App registration client ID" },
+    { "id": "clientSecret", "type": "promptString", "description": "App client secret", "password": true }
+  ],
+  "servers": {
+    "graph-intune": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "graph_intune_mcp.server"],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src",
+        "AZURE_TENANT_ID": "${input:tenantId}",
+        "AZURE_CLIENT_ID": "${input:clientId}",
+        "AZURE_CLIENT_SECRET": "${input:clientSecret}"
+      }
+    }
+  }
+}
