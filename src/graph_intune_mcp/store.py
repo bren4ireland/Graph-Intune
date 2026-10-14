@@ -41,8 +41,8 @@ def normalize(s: dict[str, Any]) -> dict[str, Any]:
         "encryption_state": s.get("encryptionState"),
         "readiness": s.get("encryptionReadinessState"),
         "policy_state": s.get("encryptionPolicySettingState"),
-        "bitlocker_state": s.get("advancedBitLockerState"),
-        "filevault_state": s.get("fileVaultState"),
+        "bitlocker_state": s.get("advancedBitLockerStates"),
+        "filevault_state": s.get("fileVaultStates"),
         "tpm_version": s.get("tpmSpecificationVersion"),
     }
 

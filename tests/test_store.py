@@ -16,3 +16,16 @@ def test_trend_and_changes():
     assert store.changes(db, 30) == [
         {"device_id": "1", "device_name": "pc1", "previous": "notEncrypted", "current": "encrypted"}]
     assert len(store.trend(db, 1)) == 1
+
+
+def test_normalize_encryption_detail_fields():
+    state = {
+        **dev(1, "encrypted"),
+        "advancedBitLockerStates": "success",
+        "fileVaultStates": "success",
+    }
+
+    normalized = store.normalize(state)
+
+    assert normalized["bitlocker_state"] == "success"
+    assert normalized["filevault_state"] == "success"
