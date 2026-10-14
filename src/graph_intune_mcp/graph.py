@@ -41,6 +41,17 @@ class GraphClient:
             yield from body.get("value", [])
             url, params = body.get("@odata.nextLink"), None
 
+    def send_mail(self, sender: str, recipients: list[str], subject: str, html: str) -> None:
+        """Send via /users/{sender}/sendMail (needs Mail.Send application permission)."""
+        payload = {"message": {
+            "subject": subject,
+            "body": {"contentType": "HTML", "content": html},
+            "toRecipients": [{"emailAddress": {"address": a}} for a in recipients]},
+            "saveToSentItems": True}
+        r = self._http.post(f"{GRAPH}/v1.0/users/{sender}/sendMail", json=payload,
+                            headers={"Authorization": f"Bearer {self._token()}"})
+        r.raise_for_status()
+
     def encryption_states(self) -> list[dict[str, Any]]:
         # beta-only endpoint with detailed BitLocker/FileVault state
         return list(self.get_all("/beta/deviceManagement/managedDeviceEncryptionStates"))

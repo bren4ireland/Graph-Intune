@@ -1,11 +1,12 @@
 """MCP server exposing Intune encryption state, trend, and last-sync tools."""
+import os
 from collections import Counter
 from datetime import datetime, timedelta
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from . import store
+from . import insights, store
 from .graph import GraphClient
 
 mcp = FastMCP("graph-intune")
@@ -87,6 +88,44 @@ def get_last_sync_active_devices(active_within_days: int = 30, stale_after_hours
     active.sort(key=lambda x: x["last_sync"], reverse=True)
     return {"active_count": len(active), "stale_count": sum(a["stale"] for a in active),
             "inactive_count": inactive, "devices": active}
+
+
+def _insight() -> dict[str, Any]:
+    c = client()
+    states = [store.normalize(s) for s in c.encryption_states()]
+    return insights.analyze(insights.enrich(states, c.managed_devices()))
+
+
+@mcp.tool()
+def get_encryption_health_insights() -> dict[str, Any]:
+    """Deep encryption health analysis: grade, % by OS, reasons devices are unencrypted
+    (readiness/policy), TPM versions, active-but-unencrypted at-risk devices, and policy gaps."""
+    return _insight()
+
+
+def _allowed(recipient: str) -> bool:
+    domains = [d.strip().lower() for d in os.environ.get("MAIL_ALLOWED_DOMAINS", "").split(",") if d.strip()]
+    return bool(domains) and recipient.rsplit("@", 1)[-1].lower() in domains
+
+
+@mcp.tool()
+def email_encryption_report(recipients: list[str], include_trend: bool = True, preview: bool = True) -> dict[str, Any]:
+    """Email the encryption health report (HTML). Defaults to preview=True, which only renders it;
+    set preview=False to actually send. Recipients must be in MAIL_ALLOWED_DOMAINS and the
+    sending mailbox is MAIL_SENDER."""
+    bad = [r for r in recipients if not _allowed(r)]
+    if bad:
+        return {"sent": False, "error": f"Recipients not in MAIL_ALLOWED_DOMAINS: {bad}"}
+    trend = store.trend(store.connect(), 30) if include_trend else None
+    html = insights.render_html(_insight(), trend)
+    subject = f"Intune encryption health report - {store.now():%Y-%m-%d}"
+    if preview:
+        return {"sent": False, "preview": True, "subject": subject, "recipients": recipients, "html": html}
+    sender = os.environ.get("MAIL_SENDER")
+    if not sender:
+        return {"sent": False, "error": "MAIL_SENDER is not set"}
+    client().send_mail(sender, recipients, subject, html)
+    return {"sent": True, "subject": subject, "recipients": recipients}
 
 
 def main() -> None:

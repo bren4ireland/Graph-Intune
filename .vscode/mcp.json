@@ -2,6 +2,8 @@
   "inputs": [
     { "id": "tenantId", "type": "promptString", "description": "Entra tenant ID" },
     { "id": "clientId", "type": "promptString", "description": "App registration client ID" },
+    { "id": "mailSender", "type": "promptString", "description": "Sender mailbox UPN (for email reports)" },
+    { "id": "mailDomains", "type": "promptString", "description": "Allowed recipient domains, comma-separated" },
     { "id": "clientSecret", "type": "promptString", "description": "App client secret", "password": true }
   ],
   "servers": {
@@ -13,6 +15,8 @@
         "PYTHONPATH": "${workspaceFolder}/src",
         "AZURE_TENANT_ID": "${input:tenantId}",
         "AZURE_CLIENT_ID": "${input:clientId}",
+        "MAIL_SENDER": "${input:mailSender}",
+        "MAIL_ALLOWED_DOMAINS": "${input:mailDomains}",
         "AZURE_CLIENT_SECRET": "${input:clientSecret}"
       }
     }
